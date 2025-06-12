@@ -1,40 +1,70 @@
-# Welcome to your Convex + React (Vite) app
+# Convex Browser Network Test
 
-This is a [Convex](https://convex.dev/) project created with [`npm create convex`](https://www.npmjs.com/package/create-convex).
+A diagnostic tool to test if a browser/network can properly connect to Convex services using different protocols.
 
-After the initial setup (<2 minutes) you'll have a working full-stack app using:
+## Purpose
 
-- Convex as your backend (database, server logic)
-- [React](https://react.dev/) as your frontend (web page interactivity)
-- [Vite](https://vitest.dev/) for optimized web hosting
-- [Tailwind](https://tailwindcss.com/) for building great looking accessible UI
+This application helps customers troubleshoot connectivity issues with Convex by testing:
 
-## Get started
+1. **WebSocket Connection** - Tests if the browser can establish and maintain a WebSocket connection to Convex
+2. **HTTP Connection** - Tests if the browser can make regular HTTP requests to Convex endpoints
+3. **Server-Sent Events (SSE)** - Tests if the browser can connect to and receive Server-Sent Events from Convex
 
-If you just cloned this codebase and didn't use `npm create convex`, run:
+## Features
 
-```
+- Real-time WebSocket connection status monitoring
+- One-click HTTP request testing
+- SSE connection testing with message streaming
+- Detailed connection diagnostics
+- Clean, responsive UI
+
+## Implementation Details
+
+The application implements three main tests:
+
+### WebSocket Test
+- Uses the Convex React client's built-in WebSocket connection
+- Monitors connection state in real-time
+- Displays detailed connection information
+
+### HTTP Test
+- Makes a simple GET request to a Convex HTTP endpoint (`/ping`)
+- Shows success/failure status and response details
+
+### SSE (Server-Sent Events) Test
+- Establishes an EventSource connection to a Convex SSE endpoint (`/sse`)
+- Receives streamed messages from the server
+- Displays real-time updates
+
+## Backend Endpoints
+
+The application implements two HTTP endpoints in `convex/http.ts`:
+
+1. `/ping` - A simple HTTP endpoint that returns a JSON response
+2. `/sse` - An endpoint that streams data using the Server-Sent Events protocol
+
+## Getting Started
+
+To run this application locally:
+
+```bash
+# Install dependencies
 npm install
+
+# Start the development server
 npm run dev
+
+# Deploy to Convex (if needed)
+npx convex deploy
 ```
 
-If you're reading this README on GitHub and want to use this template, run:
+## Environment Setup
 
-```
-npm create convex@latest -- -t react-vite
-```
+This project requires a Convex deployment. The application automatically derives the site URL from the Convex URL provided in the environment variables.
 
-## Learn more
+## Technology Stack
 
-To learn more about developing your project with Convex, check out:
-
-- The [Tour of Convex](https://docs.convex.dev/get-started) for a thorough introduction to Convex principles.
-- The rest of [Convex docs](https://docs.convex.dev/) to learn about all Convex features.
-- [Stack](https://stack.convex.dev/) for in-depth articles on advanced topics.
-
-## Join the community
-
-Join thousands of developers building full-stack apps with Convex:
-
-- Join the [Convex Discord community](https://convex.dev/community) to get help in real-time.
-- Follow [Convex on GitHub](https://github.com/get-convex/), star and contribute to the open-source implementation of Convex.
+- [Convex](https://convex.dev/) - Backend service (database, server logic, HTTP endpoints)
+- [React](https://react.dev/) - Frontend UI framework
+- [Vite](https://vitejs.dev/) - Build tool and development server
+- [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework
