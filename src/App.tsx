@@ -5,6 +5,7 @@ import { ConvexProvider } from "convex/react";
 import { useEffect, useState } from "react";
 import { ConnectionState } from "convex/browser";
 import { api } from "../convex/_generated/api.js";
+import { createProxiedWebSocketClass } from "@convex-dev/sse-proxied-websocket";
 
 export default function App() {
   return (
@@ -34,6 +35,15 @@ const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 const SITE_URL = (import.meta.env.VITE_CONVEX_URL as string).replace(
   "cloud",
   "site",
+);
+
+const proxiedWebSocketConstructor = createProxiedWebSocketClass(
+  "https://sse-ws-proxy-production.up.railway.app",
+);
+
+const proxiedConvex = new ConvexReactClient(
+  import.meta.env.VITE_CONVEX_URL as string,
+  { webSocketConstructor: proxiedWebSocketConstructor },
 );
 
 function WebSocketTest() {
@@ -328,6 +338,70 @@ function SSETest() {
   );
 }
 
+function ProxiedWebSocket() {
+  return (
+    <ConvexProvider client={proxiedConvex}>
+      <ProxiedWebSockInner />
+    </ConvexProvider>
+  );
+}
+
+function ProxiedWebSockInner() {
+  const [status, setStatus] = useState<ConnectionState>();
+  const changeDetector = useQuery(api.myFunctions.listNumbers, { count: 1 });
+  const convex = useConvex();
+  useEffect(() => {
+    const state = convex.connectionState();
+    setStatus(state);
+    const timer = setInterval(() => {
+      setStatus(convex.connectionState());
+    }, 1000);
+    return () => {
+      clearInterval(timer);
+    };
+  }, [convex, changeDetector]);
+
+  if (status === undefined) {
+    return (
+      <div className="p-4 bg-gray-100 rounded-lg">
+        Checking fourth connection type...
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+      <details>
+        <summary className="flex items-center cursor-pointer py-1">
+          <div
+            className={`w-3 h-3 rounded-full mr-2 ${status.isWebSocketConnected ? "bg-green-500" : "bg-red-500"}`}
+          ></div>
+          <h3 className="text-lg font-semibold">Fourth Test</h3>
+          <span className="ml-2 text-sm text-gray-500">
+            {status.isWebSocketConnected ? "Connected" : "Disconnected"}
+          </span>
+        </summary>
+
+        <div className="mt-4 pl-5">
+          <div className="text-gray-700 mb-2">
+            Status:{" "}
+            {status.isWebSocketConnected ? (
+              <span className="text-green-600 font-medium">Connected</span>
+            ) : (
+              <span className="text-red-600 font-medium">Disconnected</span>
+            )}
+          </div>
+
+          <div className="mt-2 p-3 bg-gray-50 rounded text-sm overflow-auto max-h-60">
+            <div className="font-semibold mb-1">Connection details:</div>
+            <pre>{JSON.stringify(status, null, 2)}</pre>
+          </div>
+        </div>
+      </details>
+    </div>
+  );
+}
+
 function Content() {
   return (
     <div className="flex flex-col gap-6 max-w-2xl mx-auto">
@@ -340,6 +414,7 @@ function Content() {
       <WebSocketTest />
       <HttpTest />
       <SSETest />
+      <ProxiedWebSocket />
     </div>
   );
 }

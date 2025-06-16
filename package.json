@@ -13,6 +13,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@convex-dev/sse-proxied-websocket": "^0.1.0-alpha.1",
     "convex": "^1.23.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
