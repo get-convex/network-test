@@ -167,7 +167,7 @@ function HttpTest() {
         <div className="mt-4 pl-5">
           <div className="mb-4">
             <button
-              onClick={() => runTest}
+              onClick={() => void runTest()}
               disabled={status === "loading"}
               className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors disabled:bg-indigo-300"
             >
