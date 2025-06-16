@@ -376,7 +376,7 @@ function ProxiedWebSockInner() {
           <div
             className={`w-3 h-3 rounded-full mr-2 ${status.isWebSocketConnected ? "bg-green-500" : "bg-red-500"}`}
           ></div>
-          <h3 className="text-lg font-semibold">Fourth Test</h3>
+          <h3 className="text-lg font-semibold">Proxied WebSocket Test</h3>
           <span className="ml-2 text-sm text-gray-500">
             {status.isWebSocketConnected ? "Connected" : "Disconnected"}
           </span>
