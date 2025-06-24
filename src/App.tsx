@@ -46,6 +46,10 @@ const proxiedConvex = new ConvexReactClient(
   { webSocketConstructor: proxiedWebSocketConstructor },
 );
 
+(window as any).SSE_WS_VERBOSE = true;
+(window as any).proxiedWebSocketConstructor = proxiedWebSocketConstructor;
+(window as any).proxiedConvex = proxiedConvex;
+
 function WebSocketTest() {
   return (
     <ConvexProvider client={convex}>
