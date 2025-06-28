@@ -118,7 +118,7 @@ function WebSocketTestInner() {
             )}
           </div>
 
-          <div className="mt-2 p-3 bg-gray-50 rounded text-sm overflow-auto max-h-120">
+          <div className="mt-2 p-3 bg-gray-50 rounded text-sm overflow-x-auto max-h-120">
             <div className="font-semibold mb-1">
               Reactive Connection details:
             </div>
@@ -208,7 +208,7 @@ function HttpTest() {
           {status === "success" && (
             <div className="text-green-600">
               HTTP connection successful!
-              <div className="mt-2 p-3 bg-gray-50 rounded text-sm overflow-auto max-h-120">
+              <div className="mt-2 p-3 bg-gray-50 rounded text-sm overflow-x-auto max-h-120">
                 <pre>{JSON.stringify(response, null, 2)}</pre>
               </div>
             </div>
@@ -352,7 +352,7 @@ function SSETest() {
                 {status === "completed"
                   ? "SSE test completed successfully!"
                   : "SSE connection successful!"}
-                <div className="mt-2 p-3 bg-gray-50 rounded text-sm overflow-auto max-h-120">
+                <div className="mt-2 p-3 bg-gray-50 rounded text-sm overflow-x-auto max-h-120">
                   <div className="font-semibold mb-1">Received messages:</div>
                   <pre>{JSON.stringify(messages, null, 2)}</pre>
                 </div>
@@ -429,7 +429,7 @@ function ProxiedWebSockInner() {
             )}
           </div>
 
-          <div className="mt-2 p-3 bg-gray-50 rounded text-sm overflow-auto max-h-120">
+          <div className="mt-2 p-3 bg-gray-50 rounded text-sm overflow-x-auto max-h-120">
             <div className="font-semibold mb-1">
               Reactive Connection details:
             </div>
