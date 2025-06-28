@@ -1,9 +1,14 @@
 "use client";
 
-import { ConvexReactClient, useConvex, useQuery } from "convex/react";
+import {
+  ConvexReactClient,
+  useConvex,
+  useConvexConnectionState,
+  useMutation,
+  useQuery,
+} from "convex/react";
 import { ConvexProvider } from "convex/react";
-import { useEffect, useState } from "react";
-import { ConnectionState } from "convex/browser";
+import { useEffect, useRef, useState } from "react";
 import { api } from "../convex/_generated/api.js";
 import { createProxiedWebSocketClass } from "@convex-dev/sse-proxied-websocket";
 
@@ -30,8 +35,6 @@ export default function App() {
   );
 }
 
-const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
-
 const SITE_URL = (import.meta.env.VITE_CONVEX_URL as string).replace(
   "cloud",
   "site",
@@ -41,16 +44,22 @@ const proxiedWebSocketConstructor = createProxiedWebSocketClass(
   "https://sse-ws-proxy-production.up.railway.app",
 );
 
-const proxiedConvex = new ConvexReactClient(
-  import.meta.env.VITE_CONVEX_URL as string,
-  { webSocketConstructor: proxiedWebSocketConstructor },
-);
-
 (window as any).SSE_WS_VERBOSE = true;
 (window as any).proxiedWebSocketConstructor = proxiedWebSocketConstructor;
-(window as any).proxiedConvex = proxiedConvex;
 
 function WebSocketTest() {
+  const [convex] = useState(
+    () =>
+      new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string, {
+        onServerDisconnectError: (err) => {
+          console.log(
+            "Normal ConvexReactClient client experienced server disconnect error:",
+            err,
+          );
+        },
+      }),
+  );
+
   return (
     <ConvexProvider client={convex}>
       <WebSocketTestInner />
@@ -58,28 +67,33 @@ function WebSocketTest() {
   );
 }
 
-function WebSocketTestInner() {
-  const [status, setStatus] = useState<ConnectionState>();
-  const changeDetector = useQuery(api.myFunctions.listNumbers, { count: 1 });
+function useNonreactiveConnectionStatus() {
   const convex = useConvex();
-  useEffect(() => {
-    const state = convex.connectionState();
-    setStatus(state);
-    const timer = setInterval(() => {
-      setStatus(convex.connectionState());
-    }, 1000);
-    return () => {
-      clearInterval(timer);
-    };
-  }, [convex, changeDetector]);
+  const [status, setStatus] = useState(convex.connectionState());
+  const lastStatusRef = useRef(status);
 
-  if (status === undefined) {
-    return (
-      <div className="p-4 bg-gray-100 rounded-lg">
-        Checking WebSocket connection...
-      </div>
-    );
-  }
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const curStatus = convex.connectionState();
+      if (JSON.stringify(curStatus) !== JSON.stringify(lastStatusRef.current)) {
+        lastStatusRef.current = curStatus;
+        setStatus(curStatus);
+      }
+    }, 200);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [convex]);
+
+  return status;
+}
+
+function WebSocketTestInner() {
+  const manualStatus = useNonreactiveConnectionStatus();
+  const reactiveStatus = useConvexConnectionState();
+  const mut = useMutation(api.myFunctions.addNumber);
+  useQuery(api.myFunctions.listNumbers, { count: 1 });
+  const status = reactiveStatus;
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
@@ -104,11 +118,23 @@ function WebSocketTestInner() {
             )}
           </div>
 
-          <div className="mt-2 p-3 bg-gray-50 rounded text-sm overflow-auto max-h-60">
-            <div className="font-semibold mb-1">Connection details:</div>
+          <div className="mt-2 p-3 bg-gray-50 rounded text-sm overflow-auto max-h-120">
+            <div className="font-semibold mb-1">
+              Reactive Connection details:
+            </div>
             <pre>{JSON.stringify(status, null, 2)}</pre>
+            <div className="font-semibold mb-1">
+              Nonreactive Connection details:
+            </div>
+            <pre>{JSON.stringify(manualStatus, null, 2)}</pre>
           </div>
         </div>
+        <button
+          className="px-2 py-1 mx-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors disabled:bg-indigo-300"
+          onClick={() => void mut({ value: Math.random() })}
+        >
+          run mutation
+        </button>
       </details>
     </div>
   );
@@ -182,7 +208,7 @@ function HttpTest() {
           {status === "success" && (
             <div className="text-green-600">
               HTTP connection successful!
-              <div className="mt-2 p-3 bg-gray-50 rounded text-sm overflow-auto max-h-60">
+              <div className="mt-2 p-3 bg-gray-50 rounded text-sm overflow-auto max-h-120">
                 <pre>{JSON.stringify(response, null, 2)}</pre>
               </div>
             </div>
@@ -326,7 +352,7 @@ function SSETest() {
                 {status === "completed"
                   ? "SSE test completed successfully!"
                   : "SSE connection successful!"}
-                <div className="mt-2 p-3 bg-gray-50 rounded text-sm overflow-auto max-h-60">
+                <div className="mt-2 p-3 bg-gray-50 rounded text-sm overflow-auto max-h-120">
                   <div className="font-semibold mb-1">Received messages:</div>
                   <pre>{JSON.stringify(messages, null, 2)}</pre>
                 </div>
@@ -343,6 +369,21 @@ function SSETest() {
 }
 
 function ProxiedWebSocket() {
+  const [proxiedConvex] = useState(
+    () =>
+      new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string, {
+        webSocketConstructor: proxiedWebSocketConstructor,
+
+        onServerDisconnectError: (err) => {
+          console.log(
+            "Proxied Convex client experienced server disconnect error:",
+            err,
+          );
+        },
+      }),
+  );
+  (window as any).proxiedConvex = proxiedConvex;
+
   return (
     <ConvexProvider client={proxiedConvex}>
       <ProxiedWebSockInner />
@@ -351,19 +392,11 @@ function ProxiedWebSocket() {
 }
 
 function ProxiedWebSockInner() {
-  const [status, setStatus] = useState<ConnectionState>();
-  const changeDetector = useQuery(api.myFunctions.listNumbers, { count: 1 });
-  const convex = useConvex();
-  useEffect(() => {
-    const state = convex.connectionState();
-    setStatus(state);
-    const timer = setInterval(() => {
-      setStatus(convex.connectionState());
-    }, 1000);
-    return () => {
-      clearInterval(timer);
-    };
-  }, [convex, changeDetector]);
+  const manualStatus = useNonreactiveConnectionStatus();
+  const reactiveStatus = useConvexConnectionState();
+  const mut = useMutation(api.myFunctions.addNumber);
+  useQuery(api.myFunctions.listNumbers, { count: 1 });
+  const status = reactiveStatus;
 
   if (status === undefined) {
     return (
@@ -396,11 +429,23 @@ function ProxiedWebSockInner() {
             )}
           </div>
 
-          <div className="mt-2 p-3 bg-gray-50 rounded text-sm overflow-auto max-h-60">
-            <div className="font-semibold mb-1">Connection details:</div>
+          <div className="mt-2 p-3 bg-gray-50 rounded text-sm overflow-auto max-h-120">
+            <div className="font-semibold mb-1">
+              Reactive Connection details:
+            </div>
             <pre>{JSON.stringify(status, null, 2)}</pre>
+            <div className="font-semibold mb-1">
+              Nonreactive Connection details:
+            </div>
+            <pre>{JSON.stringify(manualStatus, null, 2)}</pre>
           </div>
         </div>
+        <button
+          className="px-2 py-1 mx-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors disabled:bg-indigo-300"
+          onClick={() => void mut({ value: Math.random() })}
+        >
+          run mutation
+        </button>
       </details>
     </div>
   );
